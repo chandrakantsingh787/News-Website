@@ -68,7 +68,5 @@ searchButton.addEventListener("click", () => {
     curSelectedNav?.classList.remove("active");
     curSelectedNav = null;
 });
-btn.addEventListener("click", () => {
-    trailerContainer.classList.remove("active");
   });
 
