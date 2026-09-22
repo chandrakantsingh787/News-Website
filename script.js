@@ -1,5 +1,5 @@
 const API_KEY = "25d550e069e6122c73763f4c9a10aa88";
-const url = "https://gnews.io/dashboard";
+const url = "https://gnews.io/account";
 
 window.addEventListener("load", () => fetchNews("India"));
 
