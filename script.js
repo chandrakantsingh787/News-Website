@@ -1,5 +1,4 @@
 const API_KEY = "25d550e069e6122c73763f4c9a10aa88";
-const url = "https://gnews.io/dashboard";
 
 window.addEventListener("load", () => fetchNews("India"));
 
@@ -8,9 +7,23 @@ function reload() {
 }
 
 async function fetchNews(query) {
-    const res = await fetch(`${url}${query}&apiKey=${API_KEY}`);
-    const data = await res.json();
-    bindData(data.articles);
+    // We route through allorigins to bypass browser CORS blocks on GitHub Pages
+    const targetUrl = `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=en&apikey=${API_KEY}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+    try {
+        const res = await fetch(proxyUrl);
+        const json = await res.json();
+        const data = JSON.parse(json.contents);
+
+        if (data.articles && data.articles.length > 0) {
+            bindData(data.articles);
+        } else {
+            console.warn("No articles found or API quota reached:", data);
+        }
+    } catch (err) {
+        console.error("Error fetching news:", err);
+    }
 }
 
 function bindData(articles) {
@@ -20,7 +33,10 @@ function bindData(articles) {
     cardsContainer.innerHTML = "";
 
     articles.forEach((article) => {
-        if (!article.urlToImage) return;
+        // GNews uses 'image' instead of NewsAPI's 'urlToImage'
+        const imageUrl = article.image || article.urlToImage;
+        if (!imageUrl) return;
+
         const cardClone = newsCardTemplate.content.cloneNode(true);
         fillDataInCard(cardClone, article);
         cardsContainer.appendChild(cardClone);
@@ -33,12 +49,14 @@ function fillDataInCard(cardClone, article) {
     const newsSource = cardClone.querySelector("#news-source");
     const newsDesc = cardClone.querySelector("#news-desc");
 
-    newsImg.src = article.urlToImage;
+    newsImg.src = article.image || article.urlToImage;
     newsTitle.innerHTML = article.title;
-    newsDesc.innerHTML = article.description;
+    newsDesc.innerHTML = article.description || "";
 
-    const date = new Date(article.publishedAt).toLocaleString("en-US", {
-        timeZone: "Asia/Jakarta",
+    const date = new Date(article.publishedAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
     });
 
     newsSource.innerHTML = `${article.source.name} · ${date}`;
@@ -47,7 +65,6 @@ function fillDataInCard(cardClone, article) {
         window.open(article.url, "_blank");
     });
 }
-
 
 let curSelectedNav = null;
 function onNavItemClick(id) {
@@ -68,5 +85,3 @@ searchButton.addEventListener("click", () => {
     curSelectedNav?.classList.remove("active");
     curSelectedNav = null;
 });
-  });
-
